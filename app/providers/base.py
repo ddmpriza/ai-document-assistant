@@ -2,13 +2,15 @@ from abc import ABC, abstractmethod
 
 from app.models import DocumentPage, ProviderAnswer
 
+"""
+base.py
 
-class LLMProvider(ABC):
-    @abstractmethod
-    def answer(
-        self,
-        question: str,
-        pages: list[DocumentPage],
-    ) -> ProviderAnswer:
-        """Answer a question using the supplied document pages."""
-        raise NotImplementedError
+Base class for every language model provider.
+Every provider should implement the answer() method.
+
+"""
+class LLMProvider:
+    
+
+    def answer(self, question, pages):
+        raise NotImplementedError("Subclasses must implement answer().")

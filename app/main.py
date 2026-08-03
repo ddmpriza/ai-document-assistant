@@ -59,7 +59,7 @@ async def upload_document(file: UploadFile = File(...)):              # UploadRe
     # Returns a document object with metadata and pages
     document = store.add(
         filename=file.filename or "uploaded.pdf",
-        pages=pages,
+        pages=pages
     )
 
     return UploadResponse(
