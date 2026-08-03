@@ -152,7 +152,9 @@ Run all tests with:
 
 ```bash
 python -m pytest -v
+```
 
+---
 
 ## Next milestones
 The project is being developed incrementally.
