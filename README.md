@@ -34,6 +34,10 @@ The current implementation includes:
 - **OpenAI Provider** – Uses the OpenAI Responses API to generate answers based on the uploaded document. Requires a valid OpenAI API key and an OpenAI Platform account with active billing or available API credits.
 - **Ollama Provider** – Runs a local LLM without requiring an API key or external service, making the project easier to run, test and extend.
 
+The active provider is selected through the `LLM_PROVIDER` environment
+variable. This allows switching between mock, OpenAI, and Ollama without
+modifying the application code.
+
 Future providers may include Hugging Face or Azure OpenAI.
 
 ---
