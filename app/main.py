@@ -1,9 +1,10 @@
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
-from app.providers.mock_provider import MockLLMProvider
+from app.providers.openai_provider import OpenAIProvider
 from app.schemas import AskRequest, AskResponse, UploadResponse
 from app.services.document_store import DocumentStore
 from app.services.pdf_parser import extract_pdf_pages
+from openai import RateLimitError
 
 """
 main.py
@@ -29,7 +30,7 @@ app = FastAPI(
 
 store = DocumentStore()                     # DocumentStore: service for storing and retrieving documents
                                             # All documents stored in same object in memory, no persistence across restarts
-llm_provider = MockLLMProvider()            # MockLLMProvider: mock implementation of a language model provider for answering questions based on document content
+llm_provider = OpenAIProvider()             # OpenAIProvider: implementation of the OpenAI language model provider for answering questions based on document content
 
 # Get endpoint for health check, returns a simple JSON response indicating the service is running
 @app.get("/health")
@@ -54,7 +55,6 @@ async def upload_document(file: UploadFile = File(...)):              # UploadRe
         pages = extract_pdf_pages(content)                  
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-
     # Store the document in the DocumentStore
     # Returns a document object with metadata and pages
     document = store.add(
@@ -79,10 +79,20 @@ def ask_question(request: AskRequest):                                # AskRespo
     
     # Ask the LLM provider to answer the user's question
     # using the extracted pages of the document.
-    llm_response = llm_provider.answer(
-        question=request.question,
-        pages=document.pages,
-    )
+    try:
+        llm_response = llm_provider.answer(
+            question=request.question,
+            pages=document.pages,
+        )
+
+    except RateLimitError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "The AI service is currently unavailable because "
+                "the API quota has been exceeded or billing is not active."
+            ),
+        ) from exc
 
     return AskResponse(
         document_id=document.document_id,
