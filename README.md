@@ -2,6 +2,31 @@
 
 A modular FastAPI backend for uploading PDF documents and answering questions about their content using interchangeable Large Language Model (LLM) providers.
 
+---
+
+## User Interface
+
+![Streamlit UI](docs/images/streamlit-ui.png)
+
+---
+## Architecture
+
+```text
+Streamlit UI
+      │
+HTTP Requests
+      │
+FastAPI Backend
+      │
+Provider Factory
+      │
+ ┌────┴────┐
+ │         │
+OpenAI   Ollama
+```
+
+---
+
 ## Current MVP
 
 The first version includes:
@@ -184,7 +209,6 @@ Run all tests with:
 ```bash
 python -m pytest -v
 ```
-
 ---
 
 ## Next milestones
