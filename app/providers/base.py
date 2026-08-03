@@ -10,7 +10,5 @@ Every provider should implement the answer() method.
 
 """
 class LLMProvider:
-    
-
     def answer(self, question, pages):
         raise NotImplementedError("Subclasses must implement answer().")

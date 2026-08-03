@@ -1,6 +1,8 @@
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from app.providers.openai_provider import OpenAIProvider
+from app.providers.ollama_provider import OllamaProvider
+
 from app.schemas import AskRequest, AskResponse, UploadResponse
 from app.services.document_store import DocumentStore
 from app.services.pdf_parser import extract_pdf_pages
@@ -30,7 +32,7 @@ app = FastAPI(
 
 store = DocumentStore()                     # DocumentStore: service for storing and retrieving documents
                                             # All documents stored in same object in memory, no persistence across restarts
-llm_provider = OpenAIProvider()             # OpenAIProvider: implementation of the OpenAI language model provider for answering questions based on document content
+llm_provider = OllamaProvider()             # OllamaProvider: implementation of the Ollama language model provider for answering questions based on document content
 
 # Get endpoint for health check, returns a simple JSON response indicating the service is running
 @app.get("/health")
