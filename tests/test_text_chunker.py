@@ -5,9 +5,9 @@ from app.services.text_chunker import create_chunks
 
 """
     Verify that the text chunking functionality works correctly.
-    
-"""
 
+"""
+# Verify that a short page creates a single chunk.
 def test_short_page_creates_one_chunk():
     pages = [
         DocumentPage(
@@ -26,7 +26,7 @@ def test_short_page_creates_one_chunk():
     assert chunks[0].page_number == 1
     assert chunks[0].text == "This is a short document page."
 
-
+# Verify that a long page is split into overlapping chunks correctly.
 def test_long_page_creates_overlapping_chunks():
     words = [f"word{i}" for i in range(20)]
 
@@ -50,7 +50,7 @@ def test_long_page_creates_overlapping_chunks():
     # appear at the beginning of the second chunk.
     assert chunks[0].text.split()[-2:] == chunks[1].text.split()[:2]
 
-
+# Verify that an invalid chunk configuration raises a ValueError.
 def test_invalid_chunk_configuration():
     pages = [
         DocumentPage(
