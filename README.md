@@ -71,8 +71,11 @@ The first version includes:
 * Source page references
 * Automated tests with pytest
 
-> The current parser supports PDFs that already contain selectable text.
-> Scanned documents will require OCR in a later version.
+> **Current limitation**
+>
+> The current implementation supports machine-readable PDF documents.
+> Support for scanned PDFs (OCR), Microsoft Word documents, plain text files,
+> and additional data sources (e.g. databases or cloud storage) is planned for future versions.
 
 ---
 
