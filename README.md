@@ -1,6 +1,14 @@
 # AI Document Assistant
+### Retrieval-Augmented Generation (RAG) for Document Question Answering
 
-A modular Retrieval-Augmented Generation (RAG) application built with FastAPI and Streamlit for document question answering using interchangeable Large Language Model (LLM) providers.
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green)
+![Streamlit](https://img.shields.io/badge/Streamlit-UI-red)
+![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-black)
+![OpenAI](https://img.shields.io/badge/OpenAI-Responses_API-412991)
+![RAG](https://img.shields.io/badge/RAG-Semantic_Search-orange)
+
+A modular Retrieval-Augmented Generation (RAG) application for document question answering built with FastAPI, Streamlit, OpenAI and Ollama.
 
 ---
 
