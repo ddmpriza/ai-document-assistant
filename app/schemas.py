@@ -16,6 +16,7 @@ class UploadResponse(BaseModel):
     document_id: str
     filename: str
     page_count: int
+    chunk_count: int
     character_count: int
 
 # JSON sent by the client when asking a question.

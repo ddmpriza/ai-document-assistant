@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from app.providers.factory import create_llm_provider
+from app.services.text_chunker import create_chunks
 
 from app.schemas import AskRequest, AskResponse, UploadResponse
 from app.services.document_store import DocumentStore
@@ -53,20 +54,34 @@ async def upload_document(file: UploadFile = File(...)):              # UploadRe
 
     try:
         # Extract the text content from the PDF and return a list of pages
-        pages = extract_pdf_pages(content)                  
+        pages = extract_pdf_pages(content)
+        # Extract text from the uploaded PDF while preserving page numbers.
+        pages = extract_pdf_pages(content)
+
+        # Split the extracted pages into smaller overlapping text sections.
+        chunks = create_chunks(pages)
+
+        # Store both the original pages and the generated chunks.
+        document = store.add(
+            filename=file.filename or "uploaded.pdf",
+            pages=pages,
+            chunks=chunks
+        )                 
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     # Store the document in the DocumentStore
     # Returns a document object with metadata and pages
     document = store.add(
         filename=file.filename or "uploaded.pdf",
-        pages=pages
+        pages=pages,
+        chunks=chunks
     )
 
     return UploadResponse(
         document_id=document.document_id,
         filename=document.filename,
         page_count=len(document.pages),
+        chunk_count=len(document.chunks),           # Count the number of chunks created from the document pages
         character_count=sum(len(page.text) for page in document.pages),
     )
 
