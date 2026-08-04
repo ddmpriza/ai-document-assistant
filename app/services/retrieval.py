@@ -1,6 +1,6 @@
 import math
 
-from app.models import DocumentChunk, EmbeddedChunk
+from app.models import EmbeddedChunk, RetrievalResult
 
 """
 retrieval.py
@@ -45,26 +45,31 @@ def retrieve_relevant_chunks(
     question_vector: tuple[float, ...],
     embedded_chunks: list[EmbeddedChunk],
     top_k: int = 5,
-):                                                                  # list[DocumentChunk]
+    minimum_score: float = 0.35
+):                                                                  # list[RetrievalResult]
     if top_k <= 0:
         raise ValueError("top_k must be greater than zero.")
 
-    ranked_chunks: list[tuple[float, DocumentChunk]] = []
+    ranked_results: list[RetrievalResult] = []
 
     # Calculate the similarity score between the question vector and each document chunk vector.
     for embedded_chunk in embedded_chunks:
-        score = cosine_similarity(
-            question_vector,
-            embedded_chunk.vector,
-        )
+        score = cosine_similarity(question_vector, embedded_chunk.vector)
 
         # Keep track of the similarity score and the corresponding document chunk.
-        ranked_chunks.append((score, embedded_chunk.chunk))
+        if score >= minimum_score:
+            ranked_results.append(
+                RetrievalResult(
+                    chunk=embedded_chunk.chunk,
+                    score=score,
+                )
+            )
+
 
     # Highest similarity scores should appear first.
-    ranked_chunks.sort(
-        key=lambda item: item[0],       # lamda function to extract the similarity score from each tuple
+    ranked_results.sort(
+        key=lambda result: result.score,
         reverse=True
     )
 
-    return [chunk   for _, chunk in ranked_chunks[:top_k]]
+    return ranked_results[:top_k]

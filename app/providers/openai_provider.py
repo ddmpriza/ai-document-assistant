@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from app.models import DocumentPage, ProviderAnswer
+from app.models import ContextBlock, ProviderAnswer
 from app.providers.base import LLMProvider
 
 """
@@ -38,14 +38,14 @@ class OpenAIProvider(LLMProvider):
         self.client = OpenAI(api_key=api_key)
 
      # Answer a question using the text extracted from the document
-    def answer(self, question: str, pages: list[DocumentPage]):
-        # Combine the extracted pages while preserving page numbers.
-        document_text_parts = []
+    def answer(self, question: str, context: list[ContextBlock]):
+        # Combine the extracted context blocks while preserving their page numbers.
+        context_parts  = []
 
-        for page in pages:
-            document_text_parts.append(f" Page {page.page_number} \n{page.text}")
+        for block in context:
+            context_parts .append(f" Page {block.source_label} \n{block.text}")
 
-        document_text = "\n\n".join(document_text_parts)
+        context_text = "\n\n".join(context_parts)
 
         # Give the model clear instructions not to invent information
         # that is not available in the uploaded document.
@@ -57,21 +57,24 @@ class OpenAIProvider(LLMProvider):
         )
 
         user_input = (
-            f"DOCUMENT:\n{document_text}\n\n"
+            f"DOCUMENT:\n{context_text}\n\n"
             f"QUESTION:\n{question}"
         )
 
         response = self.client.responses.create(
             model=self.model,
             instructions=instructions,
-            input=user_input,
+            input=user_input
         )
 
         # For this first version, return all document pages as possible
         # sources. Precise source-page retrieval will be added later.
-        source_pages = [page.page_number for page in pages]
+        source_pages = sorted({block.page_number    for block in context
+                                                    if block.page_number is not None
+        })
+
 
         return ProviderAnswer(
             text=response.output_text,
-            source_pages=source_pages,
+            source_pages=source_pages
         )

@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from ollama import Client, ResponseError
 
-from app.models import DocumentPage, ProviderAnswer
+from app.models import ContextBlock, ProviderAnswer
 from app.providers.base import LLMProvider
 
 """
@@ -27,17 +27,17 @@ class OllamaProvider(LLMProvider):
         self.client = Client(host="http://localhost:11434")
 
     # Answer a question using the text extracted from the document
-    def answer(self, question: str, pages: list[DocumentPage]):
+    def answer(self, question: str, context: list[ContextBlock]):
 
-        # Combine all extracted pages while preserving their page numbers.
-        document_parts = []
+        # Combine all extracted context blocks while preserving their page numbers.
+        context_parts  = []
 
-        for page in pages:
-            document_parts.append(
-                f"Page {page.page_number}\n{page.text}"
+        for block in context:
+            context_parts .append(
+                f"Page {block.page_number}\n{block.text}"
             )
 
-        document_text = "\n\n".join(document_parts)
+        context_text = "\n\n".join(context_parts)
 
         system_message = (
             "You are a document question-answering assistant. "
@@ -47,7 +47,7 @@ class OllamaProvider(LLMProvider):
         )
 
         user_message = (
-            f"DOCUMENT:\n{document_text}\n\n"
+            f"DOCUMENT:\n{context_text}\n\n"
             f"QUESTION:\n{question}"
         )
 
@@ -57,11 +57,11 @@ class OllamaProvider(LLMProvider):
                 messages=[
                     {
                         "role": "system",
-                        "content": system_message,
+                        "content": system_message
                     },
                     {
                         "role": "user",
-                        "content": user_message,
+                        "content": user_message
                     },
                 ],
             )
@@ -71,13 +71,13 @@ class OllamaProvider(LLMProvider):
                 f"Ollama could not generate an answer: {exc}"
             ) from exc
 
-        answer_text = response["message"]["content"]        # Extract the answer text from the Ollama model's response
+        # Extract the answer text from the Ollama model's response
+        source_pages = sorted({block.page_number    for block in context
+                                                    if block.page_number is not None
+        })                                          
 
         # Return the answer along with the page numbers of the source pages used to generate the answer
         return ProviderAnswer(
-            text=answer_text,
-            source_pages=[
-                page.page_number
-                for page in pages
-            ]
+            text=response["message"]["content"],
+            source_pages=source_pages
         )

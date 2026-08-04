@@ -14,7 +14,7 @@ def test_add_document():
         pages=[
             DocumentPage(
                 page_number=1,
-                text="Hello World"
+                text="Hello"
             )
         ],
         chunks=[],
@@ -22,10 +22,10 @@ def test_add_document():
     )
 
     assert document.filename == "example.pdf"
-
     assert len(document.pages) == 1
-
-    assert document.pages[0].text == "Hello World"
+    assert document.pages[0].text == "Hello"
+    assert document.chunks == []
+    assert document.embedded_chunks == []
 
 """
     Verify that a stored document can be retrieved using its id.
@@ -38,7 +38,7 @@ def test_get_document():
         pages=[
             DocumentPage(
                 page_number=1,
-                text="Hello"
+                text="Hello",
             )
         ],
         chunks=[],
@@ -48,8 +48,8 @@ def test_get_document():
     retrieved = store.get(document.document_id)
 
     assert retrieved is not None
-
     assert retrieved.document_id == document.document_id
+    assert retrieved.filename == "example.pdf"
 
 """
     Verify that unknown document ids should return None.

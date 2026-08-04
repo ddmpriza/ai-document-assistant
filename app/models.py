@@ -24,6 +24,14 @@ class DocumentChunk:
     chunk_id: str
     page_number: int
     text: str
+# Represents a piece of context supplied to an LLM.
+# The provider does not need to know whether the content came from a PDF, OCR, a database, or another source.
+@dataclass(frozen=True)
+class ContextBlock:
+    text: str
+    source_label: str
+    page_number: int | None = None  # Optional page number to indicate the source of the context block, if applicable
+
 # Connects a document chunk with its numeric embedding vector.
 # The vector represents the semantic meaning of the chunk and will later be used for similarity search.
 @dataclass(frozen=True)
@@ -45,3 +53,9 @@ class StoredDocument:
 class ProviderAnswer:
     text: str
     source_pages: list[int]
+
+# Represents a document chunk along with its similarity score to a given question vector.
+@dataclass(frozen=True)
+class RetrievalResult:
+    chunk: DocumentChunk
+    score: float

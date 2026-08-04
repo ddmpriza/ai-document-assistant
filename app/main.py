@@ -1,6 +1,9 @@
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from app.providers.factory import create_llm_provider
+from app.models import ContextBlock
+from app.models import EmbeddedChunk, RetrievalResult
+from app.services.retrieval import retrieve_relevant_chunks
 from app.services.text_chunker import create_chunks
 from app.providers.embeddings.factory import create_embedding_provider 
 from app.schemas import AskRequest, AskResponse, UploadResponse
@@ -99,11 +102,57 @@ def ask_question(request: AskRequest):                                # AskRespo
         raise HTTPException(status_code=404, detail="Document not found.")
     
     # Ask the LLM provider to answer the user's question
-    # using the extracted pages of the document.
+    # using the extracted context blocks of the document.
     try:
+        # Convert the user's question into the same vector space
+        # used for the stored document chunks.
+        question_vector = embedding_provider.embed_question(request.question)
+
+        # Select only the chunks that are semantically closest
+        # to the user's question.
+        retrieval_results = retrieve_relevant_chunks(
+            question_vector=question_vector,
+            embedded_chunks=document.embedded_chunks,
+            top_k=5,
+            minimum_score=0.15
+        )
+
+        if not retrieval_results :
+            return AskResponse(
+                document_id=document.document_id,
+                question=request.question,
+                answer=(
+                    "I cannot answer this question from the provided document."
+                ),
+                source_pages=[]
+            )
+
+        print("\nRetrieved Chunks:")
+        for result in retrieval_results :
+            print(result.chunk.chunk_id)
+            print(result.chunk.page_number)
+            print(result.chunk.text[:200])
+
+        # Convert document-specific chunks into generic context blocks.
+        context = []
+        for result in retrieval_results:
+            chunk = result.chunk
+
+            context.append(
+                ContextBlock(
+                    text=chunk.text,
+                    source_label=(
+                        f"Page {chunk.page_number}, "
+                        f"chunk {chunk.chunk_id}"
+                    ),
+                    page_number=chunk.page_number,
+                )
+            )
+
+        # Send only the retrieved context to the selected LLM.
         llm_response = llm_provider.answer(
             question=request.question,
-            pages=document.pages,
+            context=context,
         )
 
     except RateLimitError as exc:

@@ -19,7 +19,7 @@ def test_short_page_creates_one_chunk():
     chunks = create_chunks(
         pages=pages,
         chunk_size=20,
-        overlap=5,
+        overlap=5
     )
 
     assert len(chunks) == 1
@@ -37,10 +37,11 @@ def test_long_page_creates_overlapping_chunks():
         )
     ]
 
+
     chunks = create_chunks(
         pages=pages,
         chunk_size=10,
-        overlap=2,
+        overlap=2
     )
 
     assert len(chunks) == 3
@@ -63,5 +64,5 @@ def test_invalid_chunk_configuration():
         create_chunks(
             pages=pages,
             chunk_size=10,
-            overlap=10,
-        )
+            overlap=10
+    )

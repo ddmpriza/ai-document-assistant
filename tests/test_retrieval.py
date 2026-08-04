@@ -62,12 +62,16 @@ def test_retrieve_relevant_chunks():
     retrieved = retrieve_relevant_chunks(
         question_vector=(1.0, 0.0),
         embedded_chunks=embedded_chunks,
-        top_k=2
+        top_k=2,
+        minimum_score=0.0
     )
 
     assert len(retrieved) == 2
-    assert retrieved[0].chunk_id == "chunk-a"
-    assert retrieved[1].chunk_id == "chunk-c"
+    assert retrieved[0].chunk.chunk_id == "chunk-a"
+    assert retrieved[1].chunk.chunk_id == "chunk-c"
+
+    assert retrieved[0].score == pytest.approx(1.0)
+    assert retrieved[1].score < retrieved[0].score
 
 # Test that the retrieval function raises a ValueError for vectors of different dimensions.
 def test_invalid_top_k():

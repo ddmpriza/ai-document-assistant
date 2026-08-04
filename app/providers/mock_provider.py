@@ -1,6 +1,6 @@
 import re                   # Regular Expressions
 
-from app.models import DocumentPage, ProviderAnswer
+from app.models import ContextBlock, ProviderAnswer
 from app.providers.base import LLMProvider
 
 """
@@ -21,7 +21,7 @@ class MockLLMProvider(LLMProvider):
     def answer(
         self,
         question: str,
-        pages: list[DocumentPage]
+        context_blocks: list[ContextBlock]
     ):
         # Extract significant keywords from the user's question
         keywords = {
@@ -30,29 +30,29 @@ class MockLLMProvider(LLMProvider):
             if len(word) > 3                                        # Very short words are ignored to reduce noise
         }
 
-        # Store each page together with its relevance score
+        # Store each context block together with its relevance score
         ranked = []
 
-        # Calculate how relevant every page is by counting how many keywords appear in its text
-        for page in pages:
-            lower_text = page.text.lower()
+        # Calculate how relevant every context block is by counting how many keywords appear in its text
+        for block in context_blocks:
+            lower_text = block.text.lower()
             score = sum(lower_text.count(keyword) for keyword in keywords)
-            ranked.append((score, page))
+            ranked.append((score, block))
 
-        # Sort pages from the highest score to the lowest
-        ranked.sort(key=lambda item: item[0], reverse=True)
-        # Keep only the three most relevant pages
-        selected = [page for score, page in ranked if score > 0][:3]
+        # Sort context blocks from the highest score to the lowest
+        ranked.sort(key=lambda item: item[0], reverse=True)     # lamda function to extract the score from each tuple
+        # Keep only the three most relevant context blocks
+        selected = [block for score, block in ranked if score > 0][:3]
 
         if not selected:
-            selected = pages[:1]
+            selected = context_blocks[:1]
 
         excerpts = []
-        for page in selected:
-            compact_text = " ".join(page.text.split())
+        for block in selected:
+            compact_text = " ".join(block.text.split())
             # Remove extra whitespace to create a cleaner response
             excerpts.append(
-                f"Page {page.page_number}: {compact_text[:500]}"
+                f"Page {block.page_number}: {compact_text[:500]}"
             )
 
         # Return the simulated LLM response together with the pages used as supporting evidence
@@ -62,5 +62,5 @@ class MockLLMProvider(LLMProvider):
                 "A real LLM provider will replace this component.\n\n"
                 + "\n\n".join(excerpts)
             ),
-            source_pages=[page.page_number for page in selected]
+            source_pages=[block.page_number for block in selected]
         )
