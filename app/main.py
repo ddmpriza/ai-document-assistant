@@ -2,7 +2,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from app.providers.factory import create_llm_provider
 from app.services.text_chunker import create_chunks
-
+from app.providers.embeddings.factory import create_embedding_provider 
 from app.schemas import AskRequest, AskResponse, UploadResponse
 from app.services.document_store import DocumentStore
 from app.services.pdf_parser import extract_pdf_pages
@@ -30,9 +30,10 @@ app = FastAPI(
     version="0.1.0"
 )
 
-store = DocumentStore()                     # DocumentStore: service for storing and retrieving documents
-                                            # All documents stored in same object in memory, no persistence across restarts
-llm_provider = create_llm_provider()        # LLMProvider: implementation of the LLM provider for answering questions based on document content
+store = DocumentStore()                         # DocumentStore: service for storing and retrieving documents
+                                                # All documents stored in same object in memory, no persistence across restarts
+llm_provider = create_llm_provider()            # LLMProvider: implementation of the LLM provider for answering questions based on document content
+embedding_provider = create_embedding_provider()    # EmbeddingProvider: service for creating embeddings of text
 
 # Get endpoint for health check, returns a simple JSON response indicating the service is running
 @app.get("/health")
@@ -55,17 +56,19 @@ async def upload_document(file: UploadFile = File(...)):              # UploadRe
     try:
         # Extract the text content from the PDF and return a list of pages
         pages = extract_pdf_pages(content)
-        # Extract text from the uploaded PDF while preserving page numbers.
-        pages = extract_pdf_pages(content)
-
+        
         # Split the extracted pages into smaller overlapping text sections.
         chunks = create_chunks(pages)
+
+        # Convert every chunk into a semantic vector.
+        embedded_chunks = embedding_provider.embed_chunks(chunks)
 
         # Store both the original pages and the generated chunks.
         document = store.add(
             filename=file.filename or "uploaded.pdf",
             pages=pages,
-            chunks=chunks
+            chunks=chunks,
+            embedded_chunks=embedded_chunks
         )                 
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -74,7 +77,8 @@ async def upload_document(file: UploadFile = File(...)):              # UploadRe
     document = store.add(
         filename=file.filename or "uploaded.pdf",
         pages=pages,
-        chunks=chunks
+        chunks=chunks,
+        embedded_chunks=embedded_chunks
     )
 
     return UploadResponse(
@@ -82,6 +86,7 @@ async def upload_document(file: UploadFile = File(...)):              # UploadRe
         filename=document.filename,
         page_count=len(document.pages),
         chunk_count=len(document.chunks),           # Count the number of chunks created from the document pages
+        embedding_count=len(document.embedded_chunks),
         character_count=sum(len(page.text) for page in document.pages),
     )
 

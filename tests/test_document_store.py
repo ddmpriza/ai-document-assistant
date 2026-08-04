@@ -17,7 +17,8 @@ def test_add_document():
                 text="Hello World"
             )
         ],
-        chunks=[]
+        chunks=[],
+        embedded_chunks=[]
     )
 
     assert document.filename == "example.pdf"
@@ -40,7 +41,8 @@ def test_get_document():
                 text="Hello"
             )
         ],
-        chunks=[]
+        chunks=[],
+        embedded_chunks=[]
     )
 
     retrieved = store.get(document.document_id)

@@ -24,6 +24,12 @@ class DocumentChunk:
     chunk_id: str
     page_number: int
     text: str
+# Connects a document chunk with its numeric embedding vector.
+# The vector represents the semantic meaning of the chunk and will later be used for similarity search.
+@dataclass(frozen=True)
+class EmbeddedChunk:
+    chunk: DocumentChunk
+    vector: tuple[float, ...]
 
 # Represents a document stored in the DocumentStore, including its metadata and the list of pages extracted from the PDF
 @dataclass(frozen=True)                     # immutable data class for a stored document, contains metadata and a list of pages
@@ -32,6 +38,7 @@ class StoredDocument:
     filename: str
     pages: list[DocumentPage]
     chunks: list[DocumentChunk]
+    embedded_chunks: list[EmbeddedChunk]    # Keeps the connection between the document chunks and their corresponding numeric embedding vectors for semantic search
 
 # Represents the answer provided by the LLM provider, including the answer text and the source pages used to generate the answer
 @dataclass(frozen=True)                     # immutable data class for the answer provided by the LLM provider, the answer text and the source pages used to generate the answer

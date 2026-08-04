@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from app.models import DocumentChunk, DocumentPage, StoredDocument
+from app.models import DocumentChunk, DocumentPage, EmbeddedChunk, StoredDocument
 
 """
 document_store.py
@@ -20,12 +20,18 @@ class DocumentStore:
         self._documents: dict[str, StoredDocument] = {}
 
     # Store a new document and generate a unique identifier.
-    def add(self, filename: str, pages: list[DocumentPage], chunks: list[DocumentChunk]):
+    def add(self, 
+            filename: str, 
+            pages: list[DocumentPage], 
+            chunks: list[DocumentChunk],
+            embedded_chunks: list[EmbeddedChunk]
+        ):                                          # StoredDocument
         document = StoredDocument(
             document_id=str(uuid4()),               # Generate a unique ID so every uploaded document can be retrieved later
             filename=filename,
             pages=pages,
-            chunks=chunks
+            chunks=chunks,
+            embedded_chunks=embedded_chunks
         )
         # Save the document using its unique ID as the dictionary key
         self._documents[document.document_id] = document
