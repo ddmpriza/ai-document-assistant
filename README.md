@@ -1,46 +1,75 @@
 # AI Document Assistant
 
-A modular FastAPI backend for uploading PDF documents and answering questions about their content using interchangeable Large Language Model (LLM) providers.
+A modular Retrieval-Augmented Generation (RAG) application built with FastAPI and Streamlit for document question answering using interchangeable Large Language Model (LLM) providers.
 
 ---
 
 ## User Interface
 
-![Streamlit UI](docs/images/streamlit-ui.png)
+### Example
+#### Question about the document
+
+![Document Question Answering](docs/images/document-question.png)
+
+#### Question outside the document
+
+![Hallucination Prevention](docs/images/outside-question.png)
 
 ---
 ## Architecture
 
 ```text
 Streamlit UI
-      │
-HTTP Requests
-      │
-FastAPI Backend
-      │
-Provider Factory
-      │
- ┌────┴────┐
- │         │
-OpenAI   Ollama
+                       │
+                 HTTP Requests
+                       │
+                 FastAPI Backend
+                       │
+                PDF Upload Endpoint
+                       │
+               PDF Text Extraction
+                       │
+                  Text Chunking
+                       │
+                  Embedding Model
+                       │
+              Semantic Retrieval
+                       │
+                 Context Builder
+                       │
+                Provider Factory
+                 ┌────────┴────────┐
+                 │                 │
+             Ollama           OpenAI
+                 │
+                 ▼
+               Response
 ```
 
 ---
+## Key Features
+- Retrieval-Augmented Generation (RAG)
+- Modular provider architecture
+- Local inference with Ollama
+- Optional OpenAI integration
+- Semantic search using embeddings
+- FastAPI backend
+- Streamlit frontend
+- Unit-tested components
 
-## Current MVP
+## Features
 
 The first version includes:
 
 * PDF upload through a FastAPI endpoint
-* Page-level text extraction with `pypdf`
-* Temporary in-memory document storage during application runtime
-* Question answering endpoint
-* Page references in responses
-* Extensible provider architecture (`LLMProvider`)
-* Mock provider for local development without external services
-* OpenAI provider using the Responses API
+* PDF text extraction with `pypdf`
+* Automatic document chunking
+* Semantic retrieval with cosine similarity
+* Retrieval-Augmented Generation (RAG)
+* Configurable LLM providers
 * Streamlit web interface
-* Local LLM inference with Ollama
+* Source page references
+* Automated tests with pytest
 
 > The current parser supports PDFs that already contain selectable text.
 > Scanned documents will require OCR in a later version.
@@ -79,6 +108,10 @@ The project follows a layered architecture to separate the API layer, business l
 │   ├── models.py
 │   ├── schemas.py
 │   ├── providers/
+│   ├──── embeddings/
+│   │     ├── factory.py
+│   │     ├── base.py
+│   │     └── ollama_provider.py
 │   │   ├── base.py
 │   │   ├── factory.py
 │   │   ├── mock_provider.py
@@ -86,7 +119,9 @@ The project follows a layered architecture to separate the API layer, business l
 │   │   └── ollama_provider.py
 │   └── services/
 │       ├── document_store.py
-│       └── pdf_parser.py
+│       ├── pdf_parser.py
+│       ├── retrieval.py
+│       └── text_chunker.py
 │
 ├── ui/
 │   └── streamlit_app.py
@@ -94,14 +129,50 @@ The project follows a layered architecture to separate the API layer, business l
 ├── tests/
 │   ├── test_api.py
 │   ├── test_document_store.py
+│   ├── test_embedding_service.py
 │   ├── test_health.py
-│   └── test_pdf_parser.py
+│   ├── test_pdf_parser.py
+│   ├── test_retrieval.py
+│   └── test_text_chunker.py
 │
 ├── requirements.txt
 ├── pytest.ini
 ├── .env.example
 └── README.md
 ```
+
+---
+
+## RAG Pipeline
+
+Each uploaded document follows the following processing pipeline:
+
+```text
+PDF
+ │
+ ▼
+Text Extraction
+ │
+ ▼
+Chunking
+ │
+ ▼
+Embeddings
+ │
+ ▼
+Semantic Retrieval
+ │
+ ▼
+Relevant Context
+ │
+ ▼
+LLM (Ollama / OpenAI)
+ │
+ ▼
+Answer + Source Pages
+```
+
+Instead of sending the entire document to the language model, only the most relevant chunks are retrieved and supplied as context. This reduces hallucinations, improves scalability, and enables more accurate document question answering.
 
 ---
 
@@ -199,10 +270,13 @@ The project includes automated tests using `pytest`.
 
 Current test coverage includes:
 
-- Health endpoint
 - API endpoints
+- Health endpoint
 - PDF parser
 - Document store
+- Text chunking
+- Embedding provider
+- Semantic retrieval
 
 Run all tests with:
 
@@ -215,7 +289,8 @@ python -m pytest -v
 The project is being developed incrementally.
 
 Planned improvements include:
-* Add text chunking with metadata
-* Add embeddings and semantic retrieval
-* Persist documents in a database
-* Add Docker and deployment configuration
+* FAISS or ChromaDB vector database
+* Conversation memory
+* Database persistence
+* OCR support for scanned PDFs
+* Docker support
