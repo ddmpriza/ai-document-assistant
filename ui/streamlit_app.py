@@ -68,9 +68,12 @@ if uploaded_file is not None:
                 )
                 response = None
 
-        # Outside of the spinner
-        if response is None:
-            st.stop()
+        if response.ok:
+            data = response.json()
+            st.session_state.document_id = data["document_id"]
+            st.success(f"Uploaded: {data['filename']}")
+        else:
+            show_error(response)
 
 if "document_id" in st.session_state:                           # If a document has been uploaded and its ID is stored in the session state, display the question input and handle the question submission
     question = st.text_input(
@@ -79,13 +82,31 @@ if "document_id" in st.session_state:                           # If a document 
 
     if st.button("Ask"):
         with st.spinner("Loading..."):
-            response = requests.post(
-                f"{API_URL}/ask",                               # Send the question to the FastAPI backend for processing and answer generation
-                json={
-                    "document_id": st.session_state.document_id,
-                    "question": question,
-                },
-            )
+            try:
+                response = requests.post(
+                    f"{API_URL}/ask",                               # Send the question to the FastAPI backend for processing and answer generation
+                    json={
+                        "document_id": st.session_state.document_id,
+                        "question": question,
+                    },
+                    timeout=300,
+                )
+
+            except requests.ConnectionError:
+                st.error(
+                    "Could not connect to the backend. "
+                    "Make sure the FastAPI server is running."
+                )
+                response = None
+
+            except requests.Timeout:
+                st.error(
+                    "The request took too long to complete."
+                )
+                response = None
+
+        if response is None:
+            st.stop()
 
         if response.ok:
             answer = response.json()                            # dict[str, str] = response.json()
