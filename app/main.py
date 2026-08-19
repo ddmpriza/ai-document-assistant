@@ -10,6 +10,7 @@ from app.schemas import AskRequest, AskResponse, UploadResponse
 from app.services.document_store import DocumentStore
 from app.services.pdf_parser import extract_pdf_pages
 from openai import RateLimitError
+from app.services.in_memory_vector_store import InMemoryVectorStore
 
 """
 main.py
@@ -33,14 +34,15 @@ app = FastAPI(
     version="0.1.0"
 )
 
-store = DocumentStore()                         # DocumentStore: service for storing and retrieving documents
-                                                # All documents stored in same object in memory, no persistence across restarts
-llm_provider = create_llm_provider()            # LLMProvider: implementation of the LLM provider for answering questions based on document content
-embedding_provider = create_embedding_provider()    # EmbeddingProvider: service for creating embeddings of text
+store = DocumentStore()                                 # DocumentStore: service for storing and retrieving documents
+                                                        # All documents stored in same object in memory, no persistence across restarts
+vector_stores: dict[str, InMemoryVectorStore] = {}      #  Separate vector store per document_id
+llm_provider = create_llm_provider()                    # LLMProvider: implementation of the LLM provider for answering questions based on document content
+embedding_provider = create_embedding_provider()        # EmbeddingProvider: service for creating embeddings of text
 
 # Get endpoint for health check, returns a simple JSON response indicating the service is running
 @app.get("/health")
-def health_check():                         # dict[str, str]
+def health_check():                                     # dict[str, str]
     return {"status": "ok"}
 
 # Post endpoint for uploading a PDF document by the user
@@ -66,23 +68,22 @@ async def upload_document(file: UploadFile = File(...)):              # UploadRe
         # Convert every chunk into a semantic vector.
         embedded_chunks = embedding_provider.embed_chunks(chunks)
 
-        # Store both the original pages and the generated chunks.
+        # Store the document in the DocumentStore
+        # Store both the original pages and the generated chunks
+        # Returns a document object with metadata and pages
         document = store.add(
             filename=file.filename or "uploaded.pdf",
             pages=pages,
             chunks=chunks,
             embedded_chunks=embedded_chunks
-        )                 
+        )              
+
+        vector_store = InMemoryVectorStore()
+        vector_store.add(embedded_chunks)
+
+        vector_stores[document.document_id] = vector_store   
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    # Store the document in the DocumentStore
-    # Returns a document object with metadata and pages
-    document = store.add(
-        filename=file.filename or "uploaded.pdf",
-        pages=pages,
-        chunks=chunks,
-        embedded_chunks=embedded_chunks
-    )
 
     return UploadResponse(
         document_id=document.document_id,
@@ -108,11 +109,17 @@ def ask_question(request: AskRequest):                                # AskRespo
         # used for the stored document chunks.
         question_vector = embedding_provider.embed_question(request.question)
 
-        # Select only the chunks that are semantically closest
-        # to the user's question.
-        retrieval_results = retrieve_relevant_chunks(
-            question_vector=question_vector,
-            embedded_chunks=document.embedded_chunks,
+        vector_store = vector_stores.get(document.document_id)
+
+        if vector_store is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Vector store not found for document.",
+            )
+
+        # Select only the chunks that are semantically closest to the user's question
+        retrieval_results = vector_store.search(
+            query_vector=question_vector,
             top_k=5,
             minimum_score=0.15
         )
