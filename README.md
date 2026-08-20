@@ -8,7 +8,7 @@
 ![OpenAI](https://img.shields.io/badge/OpenAI-Responses_API-412991)
 ![RAG](https://img.shields.io/badge/RAG-Semantic_Search-orange)
 
-A modular Retrieval-Augmented Generation (RAG) application for document question answering built with FastAPI, Streamlit, OpenAI and Ollama.
+A modular Retrieval-Augmented Generation (RAG) application for document question answering built with FastAPI, Streamlit, FAISS, OpenAI and Ollama.
 
 ---
 
@@ -41,9 +41,11 @@ Streamlit UI
                        │
                   Embedding Model
                        │
-              Semantic Retrieval
+                  FAISS Vector Index
                        │
-                 Context Builder
+                  Semantic Retrieval
+                       │
+                  Context Builder
                        │
                 Provider Factory
                  ┌────────┴────────┐
@@ -60,7 +62,7 @@ Streamlit UI
 - Modular provider architecture
 - Local inference with Ollama
 - Optional OpenAI integration
-- Semantic search using embeddings
+- Semantic search using embeddings and FAISS vector indexing
 - FastAPI backend
 - Streamlit frontend
 - Unit-tested components
@@ -72,7 +74,7 @@ The first version includes:
 * PDF upload through a FastAPI endpoint
 * PDF text extraction with `pypdf`
 * Automatic document chunking
-* Semantic retrieval with cosine similarity
+* FAISS-based semantic retrieval with cosine similarity
 * Retrieval-Augmented Generation (RAG)
 * Configurable LLM providers
 * Streamlit web interface
@@ -130,9 +132,12 @@ The project follows a layered architecture to separate the API layer, business l
 │   │   └── ollama_provider.py
 │   └── services/
 │       ├── document_store.py
+│       ├── faiss_vector_store.py
+│       ├── in_memory_vector_store.py
 │       ├── pdf_parser.py
 │       ├── retrieval.py
-│       └── text_chunker.py
+│       ├── text_chunker.py
+│       └── vector_store.py      
 │
 ├── ui/
 │   └── streamlit_app.py
@@ -141,11 +146,12 @@ The project follows a layered architecture to separate the API layer, business l
 │   ├── test_api.py
 │   ├── test_document_store.py
 │   ├── test_embedding_service.py
+│   ├── test_faiss_vector_store.py
 │   ├── test_health.py
+│   ├── test_in_memory_vector_store.py
 │   ├── test_pdf_parser.py
 │   ├── test_retrieval.py
-│   └── test_text_chunker.py
-│
+│   └── test_text_chunker.py│
 ├── requirements.txt
 ├── pytest.ini
 ├── .env.example
@@ -171,6 +177,9 @@ Chunking
 Embeddings
  │
  ▼
+FAISS Vector Index
+ │
+ ▼
 Semantic Retrieval
  │
  ▼
@@ -183,7 +192,7 @@ LLM (Ollama / OpenAI)
 Answer + Source Pages
 ```
 
-Instead of sending the entire document to the language model, only the most relevant chunks are retrieved and supplied as context. This reduces hallucinations, improves scalability, and enables more accurate document question answering.
+Instead of sending the entire document to the language model, document chunks are converted into vector embeddings and indexed with FAISS. When a question is submitted, the most semantically similar chunks are retrieved and supplied to the LLM as context. This reduces unnecessary context, improves scalability, and helps ground answers in the uploaded document.
 
 ---
 
@@ -300,8 +309,8 @@ python -m pytest -v
 The project is being developed incrementally.
 
 Planned improvements include:
-* FAISS or ChromaDB vector database
 * Conversation memory
 * Database persistence
 * OCR support for scanned PDFs
 * Docker support
+* Support for additional document formats
