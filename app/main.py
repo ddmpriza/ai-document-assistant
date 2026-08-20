@@ -11,6 +11,7 @@ from app.services.document_store import DocumentStore
 from app.services.pdf_parser import extract_pdf_pages
 from openai import RateLimitError
 from app.services.in_memory_vector_store import InMemoryVectorStore
+from app.services.faiss_vector_store import FaissVectorStore
 
 """
 main.py
@@ -36,7 +37,7 @@ app = FastAPI(
 
 store = DocumentStore()                                 # DocumentStore: service for storing and retrieving documents
                                                         # All documents stored in same object in memory, no persistence across restarts
-vector_stores: dict[str, InMemoryVectorStore] = {}      #  Separate vector store per document_id
+vector_stores: dict[str, FaissVectorStore] = {}         # Separate vector store per document_id
 llm_provider = create_llm_provider()                    # LLMProvider: implementation of the LLM provider for answering questions based on document content
 embedding_provider = create_embedding_provider()        # EmbeddingProvider: service for creating embeddings of text
 
@@ -68,6 +69,9 @@ async def upload_document(file: UploadFile = File(...)):              # UploadRe
         # Convert every chunk into a semantic vector.
         embedded_chunks = embedding_provider.embed_chunks(chunks)
 
+        if not embedded_chunks:
+                    raise HTTPException(status_code=400,detail="No embeddings were generated for the document.")
+        
         # Store the document in the DocumentStore
         # Store both the original pages and the generated chunks
         # Returns a document object with metadata and pages
@@ -78,10 +82,10 @@ async def upload_document(file: UploadFile = File(...)):              # UploadRe
             embedded_chunks=embedded_chunks
         )              
 
-        vector_store = InMemoryVectorStore()
-        vector_store.add(embedded_chunks)
-
-        vector_stores[document.document_id] = vector_store   
+        dimension = len(embedded_chunks[0].vector)                              # Εmbedding dimension required to initialize the FAISS index
+        vector_store = FaissVectorStore(dimension=dimension)                    # Create a FAISS vector store for this document
+        vector_store.add(embedded_chunks)                                       # Add the document embeddings to the FAISS index for similarity search
+        vector_stores[document.document_id] = vector_store                      # Associate the vector store with the document so it can be retrieved when a question is asked
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
