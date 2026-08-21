@@ -125,7 +125,7 @@ def ask_question(request: AskRequest):                                # AskRespo
         retrieval_results = vector_store.search(
             query_vector=question_vector,
             top_k=5,
-            minimum_score=0.15
+            minimum_score=0.25
         )
 
         if not retrieval_results :
@@ -140,9 +140,10 @@ def ask_question(request: AskRequest):                                # AskRespo
 
         print("\nRetrieved Chunks:")
         for result in retrieval_results :
-            print(result.chunk.chunk_id)
-            print(result.chunk.page_number)
-            print(result.chunk.text[:200])
+            print(f"Chunk ID: {result.chunk.chunk_id}")
+            print(f"Page: {result.chunk.page_number}")
+            print(f"Similarity score: {result.score:.4f}")
+            print(f"Text: {result.chunk.text[:200]}")
 
         # Convert document-specific chunks into generic context blocks.
         context = []

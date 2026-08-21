@@ -165,31 +165,31 @@ The project follows a layered architecture to separate the API layer, business l
 Each uploaded document follows the following processing pipeline:
 
 ```text
-PDF
- │
- ▼
-Text Extraction
- │
- ▼
-Chunking
- │
- ▼
-Embeddings
- │
- ▼
-FAISS Vector Index
- │
- ▼
-Semantic Retrieval
- │
- ▼
-Relevant Context
- │
- ▼
-LLM (Ollama / OpenAI)
- │
- ▼
-Answer + Source Pages
+           PDF
+            │
+            ▼
+      Text Extraction
+            │
+            ▼
+         Chunking
+            │
+            ▼
+        Embeddings
+            │
+            ▼
+      FAISS Vector Index
+            │
+            ▼
+      Semantic Retrieval
+            │
+            ▼
+      Relevant Context
+            │
+            ▼
+      LLM (Ollama / OpenAI)
+            │
+            ▼
+      Answer + Source Pages
 ```
 
 Instead of sending the entire document to the language model, document chunks are converted into vector embeddings and indexed with FAISS. When a question is submitted, the most semantically similar chunks are retrieved and supplied to the LLM as context. This reduces unnecessary context, improves scalability, and helps ground answers in the uploaded document.
